@@ -1,15 +1,18 @@
 # iba-x-demo
 
-**Run X's real "For You" recommendation algorithm (Phoenix + Grox) safely under IBA.**
+**Run X's real "For You" recommendation algorithm safely under IBA governance.**
 
-- Official code from https://github.com/xai-org/x-algorithm
-- Protected by your signed human intent (IBA)
+- Official code from [xai-org/x-algorithm](https://github.com/xai-org/x-algorithm)
+- Protected by **Intent-Bound Authorization (IBA)** — every major action needs your signed human intent.
 
-## Stupid Simple Setup
+### Current Status
+- ✅ Repo cloned and ready
+- ✅ IBA Desktop App ready
+- 🔄 Running the full pipeline (Windows is tricky — WSL recommended)
 
-1. Open your **IBA Desktop App**
-2. In the governed terminal:
+### Super Simple Setup (when ready)
 
 ```bash
-git clone https://github.com/Grokipaedia/iba-x-demo.git
 cd iba-x-demo
+cd x-algorithm/phoenix
+uv run run_pipeline.py --help
