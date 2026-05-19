@@ -1,34 +1,73 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>iba-x-demo</title>
   <style>
-    body { font-family: Arial; max-width: 800px; margin: 40px auto; line-height: 1.6; }
-    h1 { color: #000; }
-    .card { border: 1px solid #ddd; padding: 20px; border-radius: 8px; margin: 20px 0; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      max-width: 900px;
+      margin: 40px auto;
+      line-height: 1.6;
+      color: #333;
+      background: #f8f9fa;
+    }
+    h1 { color: #000; text-align: center; }
+    .tagline { text-align: center; font-size: 1.3em; color: #555; margin-bottom: 40px; }
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 25px;
+      margin: 25px 0;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .button {
+      display: inline-block;
+      background: #000;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: bold;
+      margin: 10px 5px;
+    }
+    .button:hover { background: #333; }
   </style>
 </head>
 <body>
   <h1>iba-x-demo</h1>
-  <p><strong>Run X's real recommendation algorithm safely under IBA.</strong></p>
+  <p class="tagline">Run X's real recommendation algorithm <strong>safely under IBA governance</strong></p>
 
   <div class="card">
-    <h2>✅ What you have now</h2>
-    <ul>
-      <li>Full x-algorithm code (Phoenix + Grox)</li>
-      <li>IBA governance layer ready</li>
-      <li>Clear instructions in README</li>
-    </ul>
+    <h2>🚀 What is this?</h2>
+    <p>Combines <strong>xAI's open recommendation engine (Phoenix + Grox)</strong> with <strong>Intent-Bound Authorization (IBA)</strong> — so every major action requires your signed human intent.</p>
   </div>
 
   <div class="card">
-    <h2>Next Steps</h2>
-    <p>1. Run inside IBA Desktop App<br>
-       2. Try the pipeline with WSL (recommended for Windows)<br>
-       3. Build governed multi-agent recommendation demos</p>
+    <h2>Quick Start</h2>
+    <pre><code>git clone https://github.com/Grokipaedia/iba-x-demo.git
+cd iba-x-demo
+
+git clone https://github.com/xai-org/x-algorithm.git x-algorithm
+
+cd x-algorithm/phoenix
+uv run run_pipeline.py --help</code></pre>
   </div>
 
-  <p>Made with ❤️ by Grokipaedia • 
-     <a href="https://github.com/Grokipaedia/iba-x-demo">GitHub Repo</a></p>
+  <div class="card">
+    <h2>By Jeffrey Williams</h2>
+    <p><strong>Inventor of IBA (Intent-Bound Authorization)</strong><br>
+    IGCP Chiang Mai, Thailand • IBA@intentbound.com</p>
+    <p>
+      <a href="https://intentbound.com" class="button">IntentBound.com</a>
+      <a href="https://github.com/Grokipaedia/iba-x-demo" class="button">GitHub Repo</a>
+      <a href="https://agentialonchain.com" class="button">AgentialOnChain.com</a>
+    </p>
+  </div>
+
+  <p style="text-align:center; color:#666; margin-top:50px;">
+    Patent GB2603013.0 (Pending) • Working Paper April 2026
+  </p>
 </body>
 </html>
