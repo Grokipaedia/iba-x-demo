@@ -15,3 +15,12 @@ git clone https://github.com/xai-org/x-algorithm.git x-algorithm
 
 cd x-algorithm/phoenix
 uv run run_pipeline.py --help
+Note: First run downloads the ~3GB mini Phoenix model.About the InventorJeffrey Williams
+Inventor of IBA (Intent-Bound Authorization)  IGCP Chiang Mai, Thailand  
+IBA@intentbound.com (mailto:IBA@intentbound.com)  
+IntentBound.com · AgentialOnChain.com  
+Patent GB2603013.0 (Pending) · PCT 150+ Countries  
+Working Paper: "Evolutionary Dynamics in Intent-Governed Coordination Systems" (April 25, 2026)
+
+Related Projectsiba-swarmforge
+
