@@ -1,73 +1,55 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>iba-x-demo</title>
-  <style>
-    body {
-      font-family: 'Segoe UI', Arial, sans-serif;
-      max-width: 900px;
-      margin: 40px auto;
-      line-height: 1.6;
-      color: #333;
-      background: #f8f9fa;
-    }
-    h1 { color: #000; text-align: center; }
-    .tagline { text-align: center; font-size: 1.3em; color: #555; margin-bottom: 40px; }
-    .card {
-      background: white;
-      border-radius: 12px;
-      padding: 25px;
-      margin: 25px 0;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-    .button {
-      display: inline-block;
-      background: #000;
-      color: white;
-      padding: 12px 24px;
-      border-radius: 8px;
-      text-decoration: none;
-      font-weight: bold;
-      margin: 10px 5px;
-    }
-    .button:hover { background: #333; }
-  </style>
-</head>
-<body>
-  <h1>iba-x-demo</h1>
-  <p class="tagline">Run X's real recommendation algorithm <strong>safely under IBA governance</strong></p>
+# IBA × X — Intent-Bound Authorization Demo
 
-  <div class="card">
-    <h2>🚀 What is this?</h2>
-    <p>Combines <strong>xAI's open recommendation engine (Phoenix + Grox)</strong> with <strong>Intent-Bound Authorization (IBA)</strong> — so every major action requires your signed human intent.</p>
-  </div>
+> Run xAI's real "For You" recommendation algorithm safely under IBA governance.
 
-  <div class="card">
-    <h2>Quick Start</h2>
-    <pre><code>git clone https://github.com/Grokipaedia/iba-x-demo.git
+**Every major action requires your signed human intent. No silent side-effects.**
+
+---
+
+## What is this?
+
+This demo wraps [xAI's open recommendation engine](https://github.com/xai-org/x-algorithm) (Phoenix + Grox) with **Intent-Bound Authorization (IBA)** — a governance protocol where AI actions are bound to explicit, signed human intent at the protocol level.
+
+| Without IBA | With IBA |
+|---|---|
+| Algorithm runs autonomously | Every major action requires a signed intent token |
+| Side-effects are implicit | Side-effects are declared and authorized |
+| Governance bolted on after | Governance baked in by design |
+
+---
+
+## Quick Start
+
+```bash
+git clone https://github.com/Grokipaedia/iba-x-demo.git
 cd iba-x-demo
-
 git clone https://github.com/xai-org/x-algorithm.git x-algorithm
-
 cd x-algorithm/phoenix
-uv run run_pipeline.py --help</code></pre>
-  </div>
+uv run run_pipeline.py --help
+```
 
-  <div class="card">
-    <h2>By Jeffrey Williams</h2>
-    <p><strong>Inventor of IBA (Intent-Bound Authorization)</strong><br>
-    IGCP Chiang Mai, Thailand • IBA@intentbound.com</p>
-    <p>
-      <a href="https://intentbound.com" class="button">IntentBound.com</a>
-      <a href="https://github.com/Grokipaedia/iba-x-demo" class="button">GitHub Repo</a>
-      <a href="https://agentialonchain.com" class="button">AgentialOnChain.com</a>
-    </p>
-  </div>
+> **Note:** First run downloads the ~3GB mini Phoenix model.
 
-  <p style="text-align:center; color:#666; margin-top:50px;">
-    Patent GB2603013.0 (Pending) • Working Paper April 2026
-  </p>
-</body>
-</html>
+---
+
+## About IBA
+
+Intent-Bound Authorization (IBA) is an AI governance protocol invented by **Jeffrey Williams**. It binds AI agent actions to cryptographically signed human intent — making AI systems auditable and controllable at the execution layer.
+
+- 🌐 [IntentBound.com](https://intentbound.com)
+- 🌐 [GoverningLayer.com](https://governinglayer.com)
+- 📄 Working Paper: *"Evolutionary Dynamics in Intent-Governed Coordination Systems"* (April 2026)
+- 📧 [IBA@intentbound.com](mailto:IBA@intentbound.com)
+- 📍 IGCP Chiang Mai, Thailand
+- ⚖️ Patent GB2603013.0 (Pending) · PCT 150+ Countries
+
+---
+
+## Related
+
+- [iba-swarmforge](https://github.com/Grokipaedia/iba-swarmforge) — IBA applied to multi-agent swarms
+- [xai-org/x-algorithm](https://github.com/xai-org/x-algorithm) — The underlying Phoenix + Grox engine
+
+---
+
+*MIT License*
