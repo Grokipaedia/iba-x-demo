@@ -1,55 +1,555 @@
-# IBA × X — Intent-Bound Authorization Demo
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IBA × X — Intent-Bound Authorization</title>
+<meta name="description" content="xAI's real recommendation algorithm, wrapped in IBA governance. Every action requires signed human intent.">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Syne:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --black: #080808;
+  --white: #f0ede6;
+  --acid: #c8ff00;
+  --dim: #161616;
+  --border: #1e1e1e;
+  --muted: #555;
+  --mid: #888;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-> Run xAI's real "For You" recommendation algorithm safely under IBA governance.
+html { scroll-behavior: smooth; }
 
-**Every major action requires your signed human intent. No silent side-effects.**
+body {
+  background: var(--black);
+  color: var(--white);
+  font-family: 'DM Mono', monospace;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
 
----
+/* grain */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 999; opacity: 0.6;
+}
 
-## What is this?
+/* glow */
+.glow {
+  position: fixed; top: -30vh; right: -15vw;
+  width: 70vw; height: 70vw; border-radius: 50%;
+  background: radial-gradient(circle, rgba(200,255,0,0.055) 0%, transparent 65%);
+  pointer-events: none;
+}
 
-This demo wraps [xAI's open recommendation engine](https://github.com/xai-org/x-algorithm) (Phoenix + Grox) with **Intent-Bound Authorization (IBA)** — a governance protocol where AI actions are bound to explicit, signed human intent at the protocol level.
+/* ─── HEADER ─── */
+header {
+  padding: 1.8rem 3rem;
+  display: flex; justify-content: space-between; align-items: center;
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; background: rgba(8,8,8,0.88);
+  backdrop-filter: blur(16px); z-index: 50;
+  animation: fadeUp 0.5s ease both;
+}
+.logo {
+  font-family: 'Syne', sans-serif; font-weight: 900;
+  font-size: 1rem; letter-spacing: 0.04em; color: var(--white); text-decoration: none;
+}
+.logo span { color: var(--acid); }
+nav a {
+  color: var(--muted); text-decoration: none; font-size: 0.72rem;
+  letter-spacing: 0.12em; text-transform: uppercase; margin-left: 2rem;
+  transition: color 0.2s;
+}
+nav a:hover { color: var(--white); }
 
-| Without IBA | With IBA |
-|---|---|
-| Algorithm runs autonomously | Every major action requires a signed intent token |
-| Side-effects are implicit | Side-effects are declared and authorized |
-| Governance bolted on after | Governance baked in by design |
+/* ─── HERO ─── */
+.hero {
+  padding: 9rem 3rem 5rem;
+  max-width: 1060px; margin: 0 auto;
+}
+.eyebrow {
+  display: inline-flex; align-items: center; gap: 0.6rem;
+  border: 1px solid #222; background: #0e0e0e;
+  padding: 0.3rem 0.75rem; border-radius: 2px;
+  font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--acid); margin-bottom: 2.5rem;
+  animation: fadeUp 0.5s 0.1s ease both;
+}
+.eyebrow::before {
+  content: ''; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--acid); display: block;
+  box-shadow: 0 0 8px var(--acid);
+  animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
----
+h1 {
+  font-family: 'Syne', sans-serif; font-weight: 900;
+  font-size: clamp(3.2rem, 9vw, 7.5rem);
+  line-height: 0.92; letter-spacing: -0.035em;
+  margin-bottom: 2rem;
+  animation: fadeUp 0.6s 0.2s ease both;
+}
+h1 .invert {
+  color: var(--black); background: var(--acid);
+  display: inline-block; padding: 0 0.15em;
+  transform: skew(-2deg); line-height: 1.05;
+}
 
-## Quick Start
+.hero-sub {
+  font-size: 0.95rem; color: var(--mid); max-width: 540px;
+  line-height: 1.75; margin-bottom: 3rem;
+  animation: fadeUp 0.6s 0.32s ease both;
+}
 
-```bash
-git clone https://github.com/Grokipaedia/iba-x-demo.git
-cd iba-x-demo
-git clone https://github.com/xai-org/x-algorithm.git x-algorithm
-cd x-algorithm/phoenix
-uv run run_pipeline.py --help
-```
+.cta-row {
+  display: flex; gap: 0.8rem; flex-wrap: wrap;
+  animation: fadeUp 0.6s 0.44s ease both;
+}
+.btn {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  padding: 0.8rem 1.5rem; font-family: 'DM Mono', monospace;
+  font-size: 0.78rem; letter-spacing: 0.07em; text-transform: uppercase;
+  text-decoration: none; border-radius: 3px; transition: all 0.18s; cursor: pointer; border: none;
+}
+.btn-acid { background: var(--acid); color: var(--black); font-weight: 500; }
+.btn-acid:hover { background: #fff; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(200,255,0,0.2); }
+.btn-ghost { border: 1px solid #252525; color: var(--mid); background: transparent; }
+.btn-ghost:hover { border-color: #444; color: var(--white); }
 
-> **Note:** First run downloads the ~3GB mini Phoenix model.
+/* ─── TERMINAL ─── */
+.terminal-wrap {
+  max-width: 1060px; margin: 0 auto; padding: 0 3rem 7rem;
+  animation: fadeUp 0.6s 0.56s ease both;
+}
+.terminal {
+  background: #0c0c0c; border: 1px solid var(--border);
+  border-radius: 8px; overflow: hidden;
+  box-shadow: 0 32px 80px rgba(0,0,0,0.6);
+}
+.term-bar {
+  background: #111; border-bottom: 1px solid var(--border);
+  padding: 0.7rem 1rem; display: flex; align-items: center; gap: 0.5rem;
+}
+.dot { width: 11px; height: 11px; border-radius: 50%; }
+.dot-r { background: #ff5f57; }
+.dot-y { background: #febc2e; }
+.dot-g { background: #28c840; }
+.term-title { color: var(--muted); font-size: 0.7rem; margin-left: 0.5rem; letter-spacing: 0.08em; }
+.term-body { padding: 1.6rem 1.8rem; font-size: 0.8rem; line-height: 2; }
+.term-line { display: flex; gap: 0.8rem; }
+.term-prompt { color: var(--acid); user-select: none; }
+.term-cmd { color: var(--white); }
+.term-comment { color: var(--muted); font-style: italic; }
+.term-out { color: #5a8a5a; padding-left: 1.5rem; }
+.term-spacer { height: 0.4rem; }
 
----
+/* ─── DEMO ─── */
+.demo-section {
+  border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+  background: #050505;
+}
+.demo-inner {
+  max-width: 1060px; margin: 0 auto; padding: 6rem 3rem;
+}
+.section-label {
+  font-size: 0.68rem; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 1rem;
+}
+.section-label span { color: var(--acid); }
+.demo-inner h2 {
+  font-family: 'Syne', sans-serif; font-weight: 800;
+  font-size: clamp(1.8rem, 4vw, 2.8rem); letter-spacing: -0.02em;
+  margin-bottom: 0.8rem;
+}
+.demo-inner .lead { color: var(--mid); font-size: 0.88rem; line-height: 1.7; max-width: 480px; margin-bottom: 3rem; }
 
-## About IBA
+/* Flow viz */
+.flow {
+  display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; align-items: center;
+  gap: 0; background: #0c0c0c; border: 1px solid var(--border); border-radius: 8px;
+  overflow: hidden; margin-bottom: 2rem;
+}
+.flow-node {
+  padding: 2rem 1.5rem; text-align: center; transition: background 0.3s;
+}
+.flow-node.active { background: #111; }
+.flow-node .node-icon { font-size: 1.8rem; margin-bottom: 0.6rem; }
+.flow-node .node-title {
+  font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.85rem;
+  margin-bottom: 0.3rem;
+}
+.flow-node .node-sub { color: var(--muted); font-size: 0.7rem; line-height: 1.5; }
+.flow-node.iba-node { border-left: 1px solid var(--border); border-right: 1px solid var(--border); }
+.flow-node.iba-node .node-title { color: var(--acid); }
+.flow-arrow {
+  padding: 1rem 0.5rem; color: var(--muted); font-size: 1.2rem; text-align: center;
+  transition: color 0.3s;
+}
+.flow-arrow.active { color: var(--acid); }
 
-Intent-Bound Authorization (IBA) is an AI governance protocol invented by **Jeffrey Williams**. It binds AI agent actions to cryptographically signed human intent — making AI systems auditable and controllable at the execution layer.
+/* IBA log */
+.iba-log {
+  background: #0c0c0c; border: 1px solid var(--border); border-radius: 8px;
+  padding: 1.4rem 1.6rem; font-size: 0.76rem; line-height: 1.9;
+  min-height: 120px;
+}
+.log-line { display: flex; gap: 0.8rem; opacity: 0; transition: opacity 0.3s; }
+.log-line.visible { opacity: 1; }
+.log-ts { color: var(--muted); }
+.log-tag { padding: 0 0.4rem; border-radius: 2px; font-size: 0.65rem; font-weight: 500; }
+.tag-req { background: #1a2a1a; color: #6abf6a; }
+.tag-iba { background: #2a2a0a; color: var(--acid); }
+.tag-ok  { background: #0a1a2a; color: #6aabff; }
+.tag-err { background: #2a0a0a; color: #ff6a6a; }
+.log-msg { color: var(--white); }
+.log-hash { color: var(--muted); font-size: 0.68rem; }
 
-- 🌐 [IntentBound.com](https://intentbound.com)
-- 🌐 [GoverningLayer.com](https://governinglayer.com)
-- 📄 Working Paper: *"Evolutionary Dynamics in Intent-Governed Coordination Systems"* (April 2026)
-- 📧 [IBA@intentbound.com](mailto:IBA@intentbound.com)
-- 📍 IGCP Chiang Mai, Thailand
-- ⚖️ Patent GB2603013.0 (Pending) · PCT 150+ Countries
+.demo-btn-row { display: flex; gap: 0.8rem; margin-top: 1.5rem; flex-wrap: wrap; }
 
----
+/* ─── CARDS ─── */
+.cards-section { max-width: 1060px; margin: 0 auto; padding: 7rem 3rem; }
+.cards-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1px; background: var(--border); border: 1px solid var(--border);
+  border-radius: 4px; overflow: hidden;
+}
+.card { background: var(--black); padding: 2.5rem; transition: background 0.2s; }
+.card:hover { background: #0e0e0e; }
+.card-num {
+  font-size: 0.65rem; letter-spacing: 0.15em; color: var(--muted);
+  text-transform: uppercase; margin-bottom: 1.4rem;
+}
+.card h3 {
+  font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1.05rem;
+  margin-bottom: 0.7rem; letter-spacing: -0.01em;
+}
+.card p { color: var(--muted); font-size: 0.79rem; line-height: 1.75; }
+.card .card-tag {
+  display: inline-block; margin-top: 1.2rem;
+  font-size: 0.65rem; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--acid); border: 1px solid #2a2a00; padding: 0.2rem 0.5rem; border-radius: 2px;
+}
 
-## Related
+/* ─── COMPARE ─── */
+.compare-section { border-top: 1px solid var(--border); background: #050505; }
+.compare-inner { max-width: 1060px; margin: 0 auto; padding: 6rem 3rem; }
+.compare-inner h2 {
+  font-family: 'Syne', sans-serif; font-weight: 800;
+  font-size: clamp(1.8rem, 3.5vw, 2.5rem); letter-spacing: -0.02em; margin-bottom: 3rem;
+}
+.compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
+.compare-col { background: var(--black); }
+.compare-head {
+  padding: 1.2rem 2rem; border-bottom: 1px solid var(--border);
+  font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase;
+}
+.compare-head.bad { color: #ff6a6a; }
+.compare-head.good { color: var(--acid); }
+.compare-row {
+  display: flex; align-items: flex-start; gap: 0.8rem;
+  padding: 1rem 2rem; border-bottom: 1px solid #111; font-size: 0.8rem;
+  line-height: 1.6;
+}
+.compare-row:last-child { border-bottom: none; }
+.ci { flex-shrink: 0; margin-top: 0.1rem; }
 
-- [iba-swarmforge](https://github.com/Grokipaedia/iba-swarmforge) — IBA applied to multi-agent swarms
-- [xai-org/x-algorithm](https://github.com/xai-org/x-algorithm) — The underlying Phoenix + Grox engine
+/* ─── INVENTOR ─── */
+.inventor-section { max-width: 1060px; margin: 0 auto; padding: 7rem 3rem; }
+.inventor-card {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center;
+  background: #0c0c0c; border: 1px solid var(--border); border-radius: 8px; padding: 3.5rem;
+}
+.inv-label { font-size: 0.68rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); margin-bottom: 1rem; }
+.inventor-card h2 {
+  font-family: 'Syne', sans-serif; font-weight: 800; font-size: 2rem;
+  letter-spacing: -0.02em; margin-bottom: 0.4rem;
+}
+.inv-title { color: var(--acid); font-size: 0.82rem; margin-bottom: 1.5rem; }
+.inv-bio { color: var(--mid); font-size: 0.82rem; line-height: 1.8; margin-bottom: 2rem; }
+.inv-links { display: flex; flex-direction: column; gap: 0.5rem; }
+.inv-link {
+  color: var(--mid); text-decoration: none; font-size: 0.78rem;
+  display: flex; align-items: center; gap: 0.6rem; transition: color 0.2s;
+}
+.inv-link:hover { color: var(--acid); }
+.inv-right { display: flex; flex-direction: column; gap: 1rem; }
+.inv-stat {
+  background: var(--black); border: 1px solid var(--border); border-radius: 4px;
+  padding: 1.2rem 1.5rem;
+}
+.inv-stat-label { font-size: 0.65rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.4rem; }
+.inv-stat-val { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1rem; }
 
----
+/* ─── FOOTER ─── */
+footer {
+  border-top: 1px solid var(--border); padding: 2.5rem 3rem;
+  display: flex; justify-content: space-between; align-items: center;
+  flex-wrap: wrap; gap: 1rem; max-width: 100%;
+}
+.footer-copy { font-size: 0.72rem; color: var(--muted); }
+.footer-links { display: flex; gap: 1.5rem; }
+.footer-links a { color: var(--muted); text-decoration: none; font-size: 0.72rem; transition: color 0.2s; }
+.footer-links a:hover { color: var(--white); }
 
-*MIT License*
+@keyframes fadeUp {
+  from { opacity:0; transform: translateY(18px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+
+@media (max-width: 700px) {
+  header, .hero, .terminal-wrap, .demo-inner, .cards-section, .compare-inner, .inventor-section { padding-left: 1.4rem; padding-right: 1.4rem; }
+  nav { display: none; }
+  .flow { grid-template-columns: 1fr; }
+  .flow-arrow { transform: rotate(90deg); padding: 0; }
+  .compare-grid { grid-template-columns: 1fr; }
+  .inventor-card { grid-template-columns: 1fr; gap: 2rem; padding: 2rem; }
+  footer { flex-direction: column; align-items: flex-start; }
+}
+</style>
+</head>
+<body>
+<div class="glow"></div>
+
+<header>
+  <a class="logo" href="#">IBA<span>×</span>X</a>
+  <nav>
+    <a href="#demo">Demo</a>
+    <a href="https://github.com/Grokipaedia/iba-x-demo">GitHub</a>
+    <a href="https://intentbound.com" target="_blank">IntentBound</a>
+    <a href="mailto:IBA@intentbound.com">Contact</a>
+  </nav>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="eyebrow">Live Demo · Open Source</div>
+  <h1>X's algorithm.<br><span class="invert">Under your</span><br>control.</h1>
+  <p class="hero-sub">xAI open-sourced their "For You" recommendation engine. We wrapped it in IBA — so every action requires your signed human intent. First governed recommender system in the wild.</p>
+  <div class="cta-row">
+    <a href="https://github.com/Grokipaedia/iba-x-demo" class="btn btn-acid">↗ View on GitHub</a>
+    <a href="#demo" class="btn btn-ghost">See it in action</a>
+    <a href="https://intentbound.com" class="btn btn-ghost" target="_blank">What is IBA?</a>
+  </div>
+</section>
+
+<!-- TERMINAL -->
+<div class="terminal-wrap">
+  <div class="terminal">
+    <div class="term-bar">
+      <div class="dot dot-r"></div>
+      <div class="dot dot-y"></div>
+      <div class="dot dot-g"></div>
+      <span class="term-title">bash — iba-x-demo</span>
+    </div>
+    <div class="term-body">
+      <div class="term-line"><span class="term-prompt">$</span><span class="term-cmd">git clone https://github.com/Grokipaedia/iba-x-demo.git &amp;&amp; cd iba-x-demo</span></div>
+      <div class="term-out">Cloning into 'iba-x-demo'...</div>
+      <div class="term-spacer"></div>
+      <div class="term-line"><span class="term-prompt">$</span><span class="term-cmd">git clone https://github.com/xai-org/x-algorithm.git x-algorithm</span></div>
+      <div class="term-out">Cloning xAI Phoenix + Grox pipeline...</div>
+      <div class="term-spacer"></div>
+      <div class="term-line"><span class="term-prompt">$</span><span class="term-cmd">python iba_wrapper.py <span class="term-comment"># wrap Phoenix in IBA governance</span></span></div>
+      <div class="term-out" style="color:var(--acid);">✓ IBA wrapper active — intent signing required</div>
+      <div class="term-out">⚡ Phoenix pipeline ready at localhost:8080</div>
+      <div class="term-line" style="margin-top:0.4rem"><span class="term-prompt">$</span><span class="term-cmd" style="opacity:0.4">_</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- INTERACTIVE DEMO -->
+<section class="demo-section" id="demo">
+  <div class="demo-inner">
+    <div class="section-label"><span>02</span> — Interactive</div>
+    <h2>Watch IBA intercept<br>a live recommendation call</h2>
+    <p class="lead">Click "Fire request" to simulate a Phoenix recommendation. Watch IBA gate it — approve or block with a signed intent token.</p>
+
+    <!-- Flow viz -->
+    <div class="flow" id="flowViz">
+      <div class="flow-node" id="fn-user">
+        <div class="node-icon">👤</div>
+        <div class="node-title">User Agent</div>
+        <div class="node-sub">Requests recommendations from Phoenix</div>
+      </div>
+      <div class="flow-arrow" id="fa-1">→</div>
+      <div class="flow-node iba-node" id="fn-iba">
+        <div class="node-icon">🔐</div>
+        <div class="node-title">IBA Gateway</div>
+        <div class="node-sub">Validates signed intent token</div>
+      </div>
+      <div class="flow-arrow" id="fa-2">→</div>
+      <div class="flow-node" id="fn-phoenix">
+        <div class="node-icon">⚡</div>
+        <div class="node-title">Phoenix + Grox</div>
+        <div class="node-sub">xAI recommendation engine</div>
+      </div>
+    </div>
+
+    <!-- Log -->
+    <div class="iba-log" id="ibaLog">
+      <div style="color:var(--muted); font-size:0.75rem;">Waiting for request...</div>
+    </div>
+
+    <div class="demo-btn-row">
+      <button class="btn btn-acid" onclick="runDemo(true)">⚡ Fire request (approved intent)</button>
+      <button class="btn btn-ghost" onclick="runDemo(false)">⛔ Fire request (no intent token)</button>
+      <button class="btn btn-ghost" onclick="resetDemo()">↺ Reset</button>
+    </div>
+  </div>
+</section>
+
+<!-- CARDS -->
+<section class="cards-section">
+  <div class="section-label" style="margin-bottom:2.5rem"><span>03</span> — Why it matters</div>
+  <div class="cards-grid">
+    <div class="card">
+      <div class="card-num">01 — Real algorithm</div>
+      <h3>Phoenix + Grox, unmodified</h3>
+      <p>The actual pipeline xAI open-sourced. Same model weights, same scoring logic that powers X's For You feed. We don't fork it — we wrap it.</p>
+      <div class="card-tag">xai-org/x-algorithm</div>
+    </div>
+    <div class="card">
+      <div class="card-num">02 — Intent-bound</div>
+      <h3>Signed intent tokens, not vibes</h3>
+      <p>Every action the algorithm takes — re-ranking, filtering, pushing — requires a cryptographically signed human intent declaration. No token, no execute.</p>
+      <div class="card-tag">Patent GB2603013.0</div>
+    </div>
+    <div class="card">
+      <div class="card-num">03 — Protocol-level</div>
+      <h3>Governance by design</h3>
+      <p>Not a monitoring layer. Not a dashboard. IBA intercepts at the execution boundary — before the algorithm acts, not after. First implementation of its kind.</p>
+      <div class="card-tag">PCT 150+ Countries</div>
+    </div>
+  </div>
+</section>
+
+<!-- COMPARE -->
+<section class="compare-section">
+  <div class="compare-inner">
+    <div class="section-label" style="margin-bottom:2rem"><span>04</span> — Comparison</div>
+    <h2>Before and after IBA</h2>
+    <div class="compare-grid">
+      <div class="compare-col">
+        <div class="compare-head bad">✗ Without IBA</div>
+        <div class="compare-row"><span class="ci">⚪</span><span>Algorithm runs autonomously, no record of intent</span></div>
+        <div class="compare-row"><span class="ci">⚪</span><span>Side-effects are implicit and unauditable</span></div>
+        <div class="compare-row"><span class="ci">⚪</span><span>Governance bolted on post-hoc via monitoring</span></div>
+        <div class="compare-row"><span class="ci">⚪</span><span>Trust is assumed, not verified</span></div>
+        <div class="compare-row"><span class="ci">⚪</span><span>No cryptographic proof of human authorisation</span></div>
+      </div>
+      <div class="compare-col" style="border-left:1px solid var(--border)">
+        <div class="compare-head good">✓ With IBA</div>
+        <div class="compare-row"><span class="ci" style="color:var(--acid)">●</span><span>Every action bound to a declared, signed intent</span></div>
+        <div class="compare-row"><span class="ci" style="color:var(--acid)">●</span><span>Side-effects declared before execution, logged immutably</span></div>
+        <div class="compare-row"><span class="ci" style="color:var(--acid)">●</span><span>Governance at the protocol layer, not the dashboard</span></div>
+        <div class="compare-row"><span class="ci" style="color:var(--acid)">●</span><span>Trust is proven via cryptographic token chain</span></div>
+        <div class="compare-row"><span class="ci" style="color:var(--acid)">●</span><span>Full audit trail: who authorised what, when, why</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- INVENTOR -->
+<section class="inventor-section">
+  <div class="section-label" style="margin-bottom:2.5rem"><span>05</span> — The inventor</div>
+  <div class="inventor-card">
+    <div class="inv-left">
+      <div class="inv-label">About</div>
+      <h2>Jeffrey Williams</h2>
+      <div class="inv-title">Inventor of Intent-Bound Authorization</div>
+      <p class="inv-bio">Building the governance layer the AI industry is missing. IBA is a protocol-level framework that binds AI agent actions to explicit human intent — applicable to any AI system, from recommenders to autonomous agents.</p>
+      <div class="inv-links">
+        <a href="https://intentbound.com" class="inv-link" target="_blank">↗ IntentBound.com</a>
+        <a href="https://governinglayer.com" class="inv-link" target="_blank">↗ GoverningLayer.com</a>
+        <a href="https://github.com/Grokipaedia/iba-swarmforge" class="inv-link" target="_blank">↗ IBA Swarmforge (related project)</a>
+        <a href="mailto:IBA@intentbound.com" class="inv-link">✉ IBA@intentbound.com</a>
+      </div>
+    </div>
+    <div class="inv-right">
+      <div class="inv-stat">
+        <div class="inv-stat-label">Location</div>
+        <div class="inv-stat-val">IGCP · Chiang Mai, Thailand</div>
+      </div>
+      <div class="inv-stat">
+        <div class="inv-stat-label">Patent</div>
+        <div class="inv-stat-val">GB2603013.0 (Pending)</div>
+      </div>
+      <div class="inv-stat">
+        <div class="inv-stat-label">PCT Coverage</div>
+        <div class="inv-stat-val">150+ Countries</div>
+      </div>
+      <div class="inv-stat">
+        <div class="inv-stat-label">Latest Working Paper</div>
+        <div class="inv-stat-val" style="font-size:0.82rem; font-family:'DM Mono',monospace; font-weight:400; line-height:1.5">"Evolutionary Dynamics in Intent-Governed Coordination Systems" · April 2026</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-copy">© 2026 Jeffrey Williams · IBA is patent pending in 150+ countries</div>
+  <div class="footer-links">
+    <a href="https://github.com/Grokipaedia/iba-x-demo" target="_blank">GitHub</a>
+    <a href="https://intentbound.com" target="_blank">IntentBound</a>
+    <a href="https://governinglayer.com" target="_blank">GoverningLayer</a>
+    <a href="mailto:IBA@intentbound.com">Contact</a>
+  </div>
+</footer>
+
+<script>
+const logs = {
+  approved: [
+    { ts:'00:00.001', tag:'req',    cls:'tag-req', msg:'→ Recommendation request received from agent_7f3a' },
+    { ts:'00:00.003', tag:'iba',    cls:'tag-iba', msg:'⚡ IBA Gateway intercepted — checking intent token...' },
+    { ts:'00:00.007', tag:'iba',    cls:'tag-iba', msg:'✓ Intent token verified: SHA-256 a3f8...d19c', hash:true },
+    { ts:'00:00.008', tag:'iba',    cls:'tag-iba', msg:'✓ Intent scope: RECOMMEND · expires: +300s · signed by: jeffrey.williams' },
+    { ts:'00:00.009', tag:'ok',     cls:'tag-ok',  msg:'→ Forwarding to Phoenix pipeline...' },
+    { ts:'00:00.041', tag:'ok',     cls:'tag-ok',  msg:'✓ Phoenix returned 48 candidates (Grox re-ranked to 10)' },
+    { ts:'00:00.042', tag:'iba',    cls:'tag-iba', msg:'📋 Action logged to immutable intent ledger' },
+    { ts:'00:00.043', tag:'ok',     cls:'tag-ok',  msg:'✓ Response delivered · audit trail: txn_9a2b1c' },
+  ],
+  blocked: [
+    { ts:'00:00.001', tag:'req',    cls:'tag-req', msg:'→ Recommendation request received from agent_4d1e' },
+    { ts:'00:00.003', tag:'iba',    cls:'tag-iba', msg:'⚡ IBA Gateway intercepted — checking intent token...' },
+    { ts:'00:00.005', tag:'err',    cls:'tag-err', msg:'✗ No intent token present in request headers' },
+    { ts:'00:00.005', tag:'err',    cls:'tag-err', msg:'✗ Request BLOCKED — Phoenix pipeline not reached' },
+    { ts:'00:00.006', tag:'iba',    cls:'tag-iba', msg:'📋 Blocked attempt logged: agent_4d1e · no authorisation' },
+    { ts:'00:00.006', tag:'err',    cls:'tag-err', msg:'→ 401 Unauthorized: IBA intent token required' },
+  ]
+};
+
+function resetDemo() {
+  document.getElementById('ibaLog').innerHTML = '<div style="color:var(--muted);font-size:0.75rem;">Waiting for request...</div>';
+  ['fn-user','fn-iba','fn-phoenix'].forEach(id => document.getElementById(id).classList.remove('active'));
+  ['fa-1','fa-2'].forEach(id => document.getElementById(id).classList.remove('active'));
+}
+
+function runDemo(approved) {
+  resetDemo();
+  const log = document.getElementById('ibaLog');
+  log.innerHTML = '';
+  const lines = approved ? logs.approved : logs.blocked;
+  const nodes = approved
+    ? [['fn-user',0],['fa-1',1],['fn-iba',2],['fa-2',4],['fn-phoenix',4]]
+    : [['fn-user',0],['fa-1',1],['fn-iba',2]];
+
+  nodes.forEach(([id, delay]) => {
+    setTimeout(() => document.getElementById(id).classList.add('active'), delay * 180);
+  });
+
+  lines.forEach((l, i) => {
+    setTimeout(() => {
+      const div = document.createElement('div');
+      div.className = 'log-line';
+      div.innerHTML = `<span class="log-ts">${l.ts}</span><span class="log-tag ${l.cls}">${l.tag.toUpperCase()}</span><span class="log-msg">${l.msg}</span>`;
+      log.appendChild(div);
+      requestAnimationFrame(() => div.classList.add('visible'));
+    }, i * 190 + 80);
+  });
+}
+</script>
+</body>
+</html>
