@@ -1,55 +1,113 @@
-# IBA × X — Intent-Bound Authorization Demo
+# IBA × X — Intent-Bound Authorization
 
-> Run xAI's real "For You" recommendation algorithm safely under IBA governance.
+> xAI open-sourced X's recommendation algorithm. We put a governance layer on it.
 
-**Every major action requires your signed human intent. No silent side-effects.**
+**Every action Phoenix takes requires your signed human intent. No token → blocked.**
 
 ---
 
-## What is this?
+## The idea in one sentence
 
-This demo wraps [xAI's open recommendation engine](https://github.com/xai-org/x-algorithm) (Phoenix + Grox) with **Intent-Bound Authorization (IBA)** — a governance protocol where AI actions are bound to explicit, signed human intent at the protocol level.
+[xAI's Phoenix + Grox](https://github.com/xai-org/x-algorithm) is the real "For You" engine, open-sourced. IBA wraps every pipeline call in a cryptographically signed intent token — so the algorithm can't act without explicit human authorisation at the protocol level.
+
+---
+
+## Quick start
+
+```bash
+# 1. Clone this repo and the X algorithm
+git clone https://github.com/Grokipaedia/iba-x-demo.git && cd iba-x-demo
+git clone https://github.com/xai-org/x-algorithm.git x-algorithm
+
+# 2. Start the IBA gateway (wraps Phoenix on :8080)
+python iba_wrapper.py
+
+# 3. Generate an IBA intent token
+python iba_wrapper.py --gen-token --signer "your.name" --scope RECOMMEND
+
+# 4. Fire a governed recommendation request
+curl -X POST http://localhost:8080/recommend \
+  -H 'X-IBA-Intent: <paste token here>' \
+  -H 'Content-Type: application/json' \
+  -d '{"candidate_ids": [1,2,3,4,5,6,7,8,9,10]}'
+```
+
+> First run downloads the ~3GB mini Phoenix model.
+
+---
+
+## Without IBA vs with IBA
 
 | Without IBA | With IBA |
 |---|---|
-| Algorithm runs autonomously | Every major action requires a signed intent token |
-| Side-effects are implicit | Side-effects are declared and authorized |
-| Governance bolted on after | Governance baked in by design |
+| Algorithm runs autonomously | Every action requires a signed intent token |
+| Side-effects are implicit | Side-effects declared before execution |
+| Governance bolted on after | Governance at the protocol layer |
+| No audit trail | Immutable intent ledger per request |
+| Trust assumed | Trust cryptographically proven |
 
 ---
 
-## Quick Start
+## How it works
 
-```bash
-git clone https://github.com/Grokipaedia/iba-x-demo.git
-cd iba-x-demo
-git clone https://github.com/xai-org/x-algorithm.git x-algorithm
-cd x-algorithm/phoenix
-uv run run_pipeline.py --help
+```
+User Agent
+    │
+    │  POST /recommend
+    │  X-IBA-Intent: <signed token>
+    ▼
+┌─────────────────────────────────────┐
+│         IBA Gateway (port 8080)     │
+│                                     │
+│  1. Extract intent token            │
+│  2. Verify HMAC signature           │
+│  3. Check scope (RECOMMEND etc.)    │
+│  4. Check expiry (TTL 300s)         │
+│  5. Log to intent ledger            │
+│                                     │
+│  BLOCKED if any step fails ──────►  401/403
+└─────────────────┬───────────────────┘
+                  │ verified
+                  ▼
+         Phoenix + Grox pipeline
+         (xAI recommendation engine)
+                  │
+                  ▼
+         Response + audit_ref back to caller
 ```
 
-> **Note:** First run downloads the ~3GB mini Phoenix model.
+---
+
+## Intent token anatomy
+
+```json
+{
+  "intent_id":  "f3a8b2c1-...",
+  "signer":     "jeffrey.williams",
+  "scope":      "RECOMMEND",
+  "issued_at":  1748000000,
+  "expires_at": 1748000300,
+  "signature":  "a3f8d19c..."
+}
+```
+
+Valid scopes: `RECOMMEND` · `RERANK` · `FILTER` · `EXPLAIN`
 
 ---
 
 ## About IBA
 
-Intent-Bound Authorization (IBA) is an AI governance protocol invented by **Jeffrey Williams**. It binds AI agent actions to cryptographically signed human intent — making AI systems auditable and controllable at the execution layer.
+**Intent-Bound Authorization** is a protocol-level AI governance framework invented by **Jeffrey Williams**. It binds AI agent actions to explicit, cryptographically signed human intent — making AI systems governable at execution time, not just observable after the fact.
 
-- 🌐 [IntentBound.com](https://intentbound.com)
-- 🌐 [GoverningLayer.com](https://governinglayer.com)
-- 📄 Working Paper: *"Evolutionary Dynamics in Intent-Governed Coordination Systems"* (April 2026)
-- 📧 [IBA@intentbound.com](mailto:IBA@intentbound.com)
-- 📍 IGCP Chiang Mai, Thailand
-- ⚖️ Patent GB2603013.0 (Pending) · PCT 150+ Countries
+This is the first public implementation of IBA applied to a live recommender system.
 
----
-
-## Related
-
-- [iba-swarmforge](https://github.com/Grokipaedia/iba-swarmforge) — IBA applied to multi-agent swarms
-- [xai-org/x-algorithm](https://github.com/xai-org/x-algorithm) — The underlying Phoenix + Grox engine
+**Jeffrey Williams** · Inventor of IBA  
+📍 IGCP · Chiang Mai, Thailand  
+✉ [IBA@intentbound.com](mailto:IBA@intentbound.com)  
+🌐 [IntentBound.com](https://intentbound.com) · [GoverningLayer.com](https://governinglayer.com)  
+📄 "Evolutionary Dynamics in Intent-Governed Coordination Systems" (April 2026)  
+⚖️ Patent GB2603013.0 (Pending) · PCT 150+ Countries
 
 ---
 
-*MIT License*
+MIT License
