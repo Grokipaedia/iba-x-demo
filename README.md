@@ -16,6 +16,8 @@ Not a monitoring tool. Not a dashboard. Not a rate limiter.
 
 A **trust primitive** — the foundation layer on which governed AI systems are built.
 
+![IBA Ecosystem](ecosystem.svg)
+
 → [Why IBA-X exists](WHY-IBA-X.md)
 → [How the trust model works](TRUST_MODEL.md)
 → [Scope enforcement in real flows](SCOPE.md)
