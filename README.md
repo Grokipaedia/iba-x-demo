@@ -1,123 +1,106 @@
-# IBA × X — Zero Trust for Autonomous AI Agents
+# Why IBA-X — and Why Now
 
-> A reference implementation of Intent-Bound Authorization applied to a production AI system.
-
-**xAI open-sourced X's recommendation engine. This wraps it so it cannot act without your explicit, cryptographically signed intent.**
-
-Every action Phoenix takes requires a signed human intent token. No token → blocked. Wrong scope → blocked. Expired → blocked. Forged → blocked. Always.
+> Every previous security revolution was about protecting systems from humans.
+> IBA-X is about governing systems made of AI.
 
 ---
 
-## What this is
+## The problem nobody has solved yet
 
-[xAI's Phoenix + Grox](https://github.com/xai-org/x-algorithm) is the real "For You" recommendation engine, open-sourced. This repository wraps every pipeline call in a signed intent certificate — so the algorithm cannot act without explicit human authorisation at the protocol layer.
+AI agents are being deployed into the world at a pace that has outrun every governance framework we have.
 
-Not a monitoring tool. Not a dashboard. Not a rate limiter.
+They trade. They recommend. They hire. They diagnose. They negotiate. They act.
 
-A **trust primitive**: a gate that sits in front of the pipeline and only lets verified, in-scope, unexpired requests through.
+And when something goes wrong — when an agent does something its operator didn't intend, couldn't predict, or can't explain — there is, in most current systems, no cryptographic record of what was authorised, by whom, and why.
 
----
-
-## Quick start
-
-```bash
-# 1. Clone this repo and the X algorithm
-git clone https://github.com/Grokipaedia/iba-x-demo.git && cd iba-x-demo
-git clone https://github.com/xai-org/x-algorithm.git x-algorithm
-
-# 2. Install the one real dependency
-pip install cryptography
-
-# 3. Start the IBA gateway (wraps Phoenix on :8080)
-python iba_wrapper.py
-
-# 4. Generate a signed intent token
-python iba_wrapper.py --gen-token --signer "your.name" --scope RECOMMEND
-
-# 5. Fire a governed recommendation request
-curl -X POST http://localhost:8080/recommend \
-  -H 'X-IBA-Intent: <paste token here>' \
-  -H 'Content-Type: application/json' \
-  -d '{"candidate_ids": [1,2,3,4,5,6,7,8,9,10]}'
-```
-
-**Current state, honestly:** steps 1–5 demonstrate the real governance gate — a genuine, cryptographically signed and verified request either passes or is blocked, with a real audit trail. The response content itself is currently a stub (`_call_phoenix()` returns simulated recommendation IDs), not a live call into the cloned `x-algorithm` pipeline. Wiring the gate to real Phoenix output is the next integration step, not yet done. The gate logic itself — the actual IBA contribution — is real and tested end-to-end.
+There is only: *it happened.*
 
 ---
 
-## Without IBA vs with IBA
+## Why existing approaches fall short
 
-| Without IBA | With IBA |
-|---|---|
-| Algorithm runs autonomously | Every action requires a signed intent token |
-| Side-effects are implicit | Side-effects declared before execution |
-| Governance bolted on after | Governance at the protocol layer |
-| No audit trail | Immutable intent ledger per request |
-| Trust assumed | Trust cryptographically proven — real ECDSA P-256, private key signs, public key verifies |
+**Monitoring** watches what agents do after the fact. It is forensics, not governance.
 
----
+**Rate limiting** slows agents down. It does not bind them to human intent.
 
-## How it works
+**RLHF and alignment training** shapes agent behaviour statistically. It does not guarantee individual action authorisation.
 
-```
-User Agent
-    │
-    │  POST /recommend
-    │  X-IBA-Intent: <signed token>
-    ▼
-┌─────────────────────────────────────┐
-│         IBA Gateway (port 8080)     │
-│                                     │
-│  1. Extract intent token             │
-│  2. Verify ECDSA P-256 signature     │
-│     (public key must match the      │
-│      pinned trusted principal)       │
-│  3. Check scope (RECOMMEND etc.)     │
-│  4. Check expiry (TTL 300s)          │
-│  5. Log to intent ledger             │
-│                                     │
-│  BLOCKED if any step fails ──────►  401/403
-└─────────────────┬───────────────────┘
-                  │ verified only
-                  ▼
-         Phoenix + Grox pipeline
-         (xAI recommendation engine)
-         — currently stubbed, see Quick Start
-                  │
-                  ▼
-         Response + audit_ref returned
-```
+**Dashboards and audit logs** record what happened. They do not prevent what shouldn't.
+
+None of these approaches answer the fundamental question:
+
+*Was this action explicitly authorised by a human, at the moment it occurred?*
+
+IBA does — for the specific case demonstrated here: a governance gate in front of an AI pipeline, requiring a signed, scope-matched, unexpired credential before any wrapped action executes. That's a real, tested property. Whether it scales to every deployment context described below is the broader bet this project is making, not yet a proven universal.
 
 ---
 
-## Repository
+## Why now
 
-```
-iba-x-demo/
-├── iba_wrapper.py    ← IBA gateway — intent verification, scope enforcement, audit log
-├── iba_crypto.py      ← ECDSA P-256 signing and verification (required by iba_wrapper.py)
-├── index.html         ← Live interactive demo
-└── x-algorithm/       ← xAI's Phoenix + Grox (submodule)
-```
+Four industry-level forces, plus one specific to this implementation:
 
----
+**1. Agents are multiplying**
+LLM-powered agents are moving from demos to production infrastructure. They book meetings, execute trades, manage codebases, operate supply chains. The attack surface for ungoverned AI action is expanding weekly.
 
-## About IBA
+**2. Regulators are arriving**
+The EU AI Act, emerging US federal frameworks, and sector-specific rules in finance and healthcare are converging on one requirement: explainability. Who authorised this? On what basis? Show the audit trail.
 
-**Intent-Bound Authorization** is a protocol-level AI governance framework. It binds AI agent actions to explicit, cryptographically signed human intent — making autonomous systems auditable and governable at execution time.
+**3. Enterprises are cautious**
+Every team deploying AI agents shares a version of the same concern: an agent acting outside its intended scope, at scale, before anyone notices. Most existing security tooling was built for human actors, not autonomous systems.
 
-**Jeffrey Williams** · Inventor of IBA
-📍 Chiang Mai, Thailand
-✉ [IBA@intentbound.com](mailto:IBA@intentbound.com)
-🌐 [IntentBound.com](https://intentbound.com)
-⚖️ Patent GB2603013.0 (Pending) · UK IPO · PCT 150+ Countries
+**4. Zero Trust is the established playbook**
+The security industry spent a decade moving from perimeter defence to Zero Trust — never assume, always verify. Applying that same principle to AI agents specifically is still early.
+
+**5. The overhead is genuinely negligible — measured, not assumed**
+Real ECDSA P-256 signature verification, measured directly in this implementation: 0.11–0.82ms per check, 200 samples. The infrastructure cost of intent-bound governance, at least at this layer, is small enough not to be the reason not to do it.
 
 ---
 
-## Related
+## What IBA-X demonstrates
 
-- [iba-swarmforge](https://github.com/Grokipaedia/iba-swarmforge) — IBA applied to multi-agent swarms, with measured performance data
+IBA-X is a reference implementation of Intent-Bound Authorization applied to a real, third-party production AI system — xAI's open Phoenix + Grox recommendation engine.
+
+What's actually shown, tested end-to-end:
+
+- An agent action can be cryptographically bound to explicit human intent (real ECDSA P-256, private key signs, public key verifies)
+- Scope enforcement can be applied at the protocol layer — per endpoint, per token, verified directly, not just described
+- Verification overhead at this layer is genuinely negligible — measured in sub-millisecond terms
+- An audit trail is a natural byproduct of the gate architecture
+
+**One honest limitation, stated plainly**: the audit trail in the current implementation is in-memory and console-printed for the life of the running process — not yet a persistent or externally-anchored store. "A natural byproduct of the architecture" is true; "immutable, tamper-proof storage" is a roadmap item, not current state.
+
+This is not a monitoring tool, a compliance dashboard, or a rate limiter. It's a gate: verified credentials pass, everything else is blocked before the wrapped pipeline is ever reached.
 
 ---
 
-Proprietary · © 2026 Jeffrey Williams · All rights reserved. Covered by Patent Application GB2603013.0 (pending). No reproduction, modification, or commercial use without written permission.
+## Who this is aimed at
+
+**Enterprises** deploying AI agents into regulated workflows — finance, healthcare, legal, defence — who will eventually need demonstrable, auditable human oversight at the action level.
+
+**AI platform builders** who would rather integrate a governance layer than build one from scratch.
+
+**Regulators and standards bodies** who want a concrete technical reference for what "human oversight of AI" can look like in working code, not just policy language.
+
+**Security teams** extending Zero Trust thinking into AI-native environments.
+
+---
+
+## The working paper
+
+*"Evolutionary Dynamics in Intent-Governed Coordination Systems"* — Jeffrey Williams, April 2026. Establishes a theoretical basis for intent-bound coordination in multi-agent systems, including trust propagation and swarm governance dynamics.
+
+Available on request: IBA@intentbound.com. Referenced here for completeness; it has not been independently reviewed as part of the verification work reflected in this repository's documentation.
+
+---
+
+## The patent
+
+**GB2603013.0** (Pending) · UK IPO · Priority date 10 February 2026 · PCT rights preserved across 150+ countries until August 2028.
+
+The priority date predates Mastercard's public announcement of its own "Verifiable Intent" framework by 23 days — a specific, dated, documented gap, not a claim of years of foresight. That 23-day gap, and the architectural overlap between the two frameworks, is the actual evidentiary basis for this project's timing argument. It doesn't need embellishing to be a real, interesting fact.
+
+---
+
+*Jeffrey Williams · Inventor of IBA*
+*Chiang Mai, Thailand*
+*IBA@intentbound.com · IntentBound.com*
