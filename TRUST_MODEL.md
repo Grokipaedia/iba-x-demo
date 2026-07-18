@@ -18,16 +18,17 @@ Trust is not assumed from prior behaviour. Not inferred from training. Not deleg
 
 Traditional access control asks: *does this entity have permission?*
 
-IBA asks four questions simultaneously:
+IBA asks three questions simultaneously, verified for every request:
 
 | Question | Mechanism |
 |---|---|
-| **Who** authorised this? | Signer identity in intent token |
-| **What** exactly was authorised? | Scope field — atomic, non-combinable |
-| **When** was it authorised? | Issued-at + TTL enforced at verification |
-| **Why** — for what declared purpose? | Intent payload, human-readable |
+| **Who** authorised this? | `principal` field, verified against a pinned trusted public key — not a name you can type in, a signature you cannot forge |
+| **What** exactly was authorised? | `declared_intent`, checked for an exact match against the specific endpoint being called |
+| **When** was it authorised? | `issued_at` + `hard_expiry_seconds`, enforced at verification |
 
-All four must be satisfied. Any failure blocks execution.
+All three must be satisfied. Any failure blocks execution.
+
+*(An earlier version of this document listed a fourth, independent "why" dimension. In the current implementation, the declared purpose and the scope are the same field — there is no separate human-readable rationale captured beyond the scope name itself. If a genuinely separate "why" is wanted, that's a real schema addition, not something already present.)*
 
 ---
 
@@ -46,149 +47,117 @@ All four must be satisfied. Any failure blocks execution.
                            │ verified only
 ┌──────────────────────────▼──────────────────────────┐
 │                   EXECUTION LAYER                   │
-│  Phoenix + Grox · Any AI pipeline · Any agent       │
+│  Phoenix + Grox pipeline (currently stubbed)        │
 └──────────────────────────┬──────────────────────────┘
                            │
 ┌──────────────────────────▼──────────────────────────┐
 │                    AUDIT LAYER                      │
-│  Immutable log · intent_id · signer · scope · result│
+│  Log · intent_id · signer · scope · result          │
 └─────────────────────────────────────────────────────┘
 ```
 
-The execution layer is only reachable through verified intent. There is no side door.
+The execution layer is only reachable through verified intent. There is no side door — tested directly by attempting to reach it with missing, expired, forged, and wrong-scope credentials; all four are rejected before the stub pipeline is ever called.
 
 ---
 
 ## Token anatomy
 
-Every IBA intent token carries five verifiable fields:
+This is the actual structure, generated and printed directly from the real implementation — not an idealized example:
 
 ```json
 {
-  "intent_id":  "f3a8b2c1-9d4e-4a1b-8c7f-2e5d6a3b1c0d",
-  "signer":     "jeffrey.williams",
-  "scope":      "RECOMMEND",
-  "issued_at":  1748000000,
-  "expires_at": 1748000300,
-  "signature":  "a3f8d19c4b2e7f1a..."
+  "agent_id": "G-0001",
+  "principal": "jeffrey.williams",
+  "declared_intent": "RECOMMEND",
+  "scope": {"allowed_scope": "RECOMMEND"},
+  "default_posture": "DENY_ALL",
+  "hard_expiry_seconds": 300,
+  "issued_at": 1784344714.0152059,
+  "signature": "MEUCIQDJvWMcNZDO67Kgk+HTn86eqNYP2EtE0KfZnOEdl6cfgwIgKbLi8kmqKq8zeclYqpMy5jMFL+Lz7lYTI/lYRMQL010=",
+  "public_key_pem": "-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----"
 }
 ```
 
-- **intent_id** — globally unique, non-replayable
-- **signer** — human identity, not agent identity
-- **scope** — the atomic action permitted, nothing more
-- **issued_at / expires_at** — hard time boundary, not soft guideline
-- **signature** — HMAC-SHA256, verified before any action proceeds
+- **agent_id** — identifies the request, not globally tracked for replay prevention in the current implementation (a real replay-protection mechanism would need to track used `agent_id`s — not yet built)
+- **principal** — human identity; verified against `public_key_pem`, not trusted just because the field says so
+- **declared_intent** — the atomic action permitted, checked for an exact match against the specific endpoint
+- **issued_at / hard_expiry_seconds** — hard time boundary, checked at every verification
+- **signature** — real ECDSA P-256 (asymmetric), verified against the embedded `public_key_pem` before any action proceeds. The gateway additionally checks that public key against a separately pinned trusted key — an attacker who signs with their *own* keypair produces a validly-formed but untrusted token, correctly rejected.
 
 ---
 
 ## Scope is atomic
 
-Scopes do not stack. `RECOMMEND` does not imply `RERANK`. An agent holding a `RECOMMEND` token that attempts a `RERANK` action is blocked — not warned, not logged-and-allowed. **Blocked.**
+Scopes do not stack. `RECOMMEND` does not imply `RERANK`. An agent holding a `RECOMMEND` token that attempts a `RERANK` action is blocked — verified directly, not just described (see [SCOPE.md](SCOPE.md) for the full test results).
 
-| Scope | Permits | Does not permit |
-|---|---|---|
-| `RECOMMEND` | Candidate retrieval | Re-ranking, filtering, writes |
-| `RERANK` | Re-ordering existing candidates | New retrieval, filtering, writes |
-| `FILTER` | Removing candidates by predicate | Retrieval, re-ranking, writes |
-| `EXPLAIN` | Returning scoring rationale | Any result modification |
+| Scope | Endpoint | Permits | Does not permit |
+|---|---|---|---|
+| `RECOMMEND` | `/recommend` | Candidate retrieval | Re-ranking, filtering, explaining |
+| `RERANK` | `/rerank` | Re-ordering existing candidates | Retrieval, filtering, explaining |
+| `FILTER` | `/filter` | Removing candidates by exclude-list | Retrieval, re-ranking, explaining |
+| `EXPLAIN` | `/explain` | Returning scoring rationale | Any result modification |
 
-If a workflow requires multiple actions, it requires multiple signed intents. This is by design.
+If a workflow requires multiple actions, it requires multiple signed intents, each to its own endpoint. This is by design, and tested.
 
 ---
 
-## Trust is not delegated silently
+## Trust is not delegated silently — verified
 
-An agent cannot pass its trust to another agent without explicit human re-authorisation.
+The core claim: one agent's token cannot be reused to authorise a different action, and nothing can mint a new valid token without the trusted private key. Tested directly, three scenarios:
 
-Agent A holding a `RECOMMEND` token cannot instruct Agent B to act under that token. Agent B requires its own signed intent token, issued by a human, for its specific action.
+1. **A token scoped for one action, used for another** — blocked (403, scope mismatch).
+2. **A "rogue" party signs its own new token with its own keypair**, attempting to act as though authorised — blocked (401, untrusted signer: the gateway only accepts the one pinned trusted public key, not any validly-formed signature).
+3. **A genuine new human-signed token for the specific action** — succeeds.
 
-This eliminates a class of attack — **privilege escalation through agent chaining** — that no existing framework addresses.
+This holds with the architecture as it exists today: one gateway, one trusted signer, four scoped endpoints. It does not require, and does not currently include, any orchestration hierarchy.
+
+### What's still conceptual, not built
+
+An earlier version of this document described a specific **Orchestrator Agent → Sub-Agent** hierarchy, with a dedicated `ORCHESTRATE` scope and multi-tier delegation. That's a reasonable design direction, but it does not exist in the current code — there's no `ORCHESTRATE` scope, no orchestrator concept, no sub-agent chaining logic. The general no-silent-delegation *property* above is real and tested; the specific multi-tier *architecture* pictured for it was aspirational. Building it for real is a separate, larger task — a genuine architecture decision (how many tiers, how scopes narrow at each level, whether sub-agents get their own keypairs or shared ones) worth deciding deliberately rather than something to bolt on quietly.
 
 ---
 
 ## What IBA trust is not
 
 **Not role-based access control (RBAC)**
-RBAC grants permissions to identities. IBA grants authorisation for specific actions at specific moments. An agent with RBAC permission to "recommend" can recommend any time, forever. An IBA token expires in 300 seconds.
+RBAC grants permissions to identities. IBA grants authorisation for specific actions at specific moments. An agent with RBAC permission to "recommend" can recommend any time, forever. An IBA token expires — 300 seconds by default in this implementation, configurable at issuance.
 
 **Not OAuth**
-OAuth delegates access to resources. IBA binds execution to declared human intent. The difference: OAuth says *you may access this*. IBA says *a human just told you to do this specific thing, right now*.
+OAuth delegates access to resources. IBA binds execution to declared human intent, checked per action rather than once at grant time.
 
 **Not behavioural monitoring**
-Monitoring observes what agents do. IBA constrains what agents can do. Observation after the fact is not governance.
+Monitoring observes what agents do, after the fact. IBA constrains what agents can do, before the action executes — verified by the fact that a blocked request never reaches the stub pipeline at all, not just that it gets flagged afterward.
 
 ---
 
 ## The audit trail as a trust artifact
 
-Every verified IBA action produces an immutable log entry:
+Every verified IBA action produces a log entry. Real output, from an actual run:
 
 ```
-[09:14:22] [VERIFIED ] intent=f3a8b2c1 signer=jeffrey.williams scope=RECOMMEND
-[09:14:22] [DELIVERED] intent=f3a8b2c1 signer=jeffrey.williams scope=RECOMMEND | returned 10 items
+[03:19:10] [VERIFIED] intent=42db9055... signer=jeffrey.williams scope=RECOMMEND
+[03:19:10] [DELIVERED] intent=42db9055... signer=jeffrey.williams scope=RECOMMEND | RECOMMEND — 10 items
+[03:19:10] [BLOCKED ] intent=42db9055... signer=- scope=- | Scope violation: FILTER requires an intent token scoped to FILTER, this token is scoped to RECOMMEND
 ```
 
-```
-[09:15:41] [BLOCKED  ] intent=none signer=- scope=- | No X-IBA-Intent header
-```
-
-The audit trail is not an afterthought. It is a natural output of the verification architecture — every transaction leaves a signed, timestamped, scope-tagged record.
-
-This is what regulators mean when they require "demonstrable human oversight." Not a policy document. A cryptographic proof per action.
-
----
-
-## Trust in multi-agent systems
-
-In swarm architectures, trust propagation follows a strict hierarchy:
-
-```
-Human
-  │
-  │ signs intent (scope: ORCHESTRATE)
-  ▼
-Orchestrator Agent
-  │
-  │ cannot self-delegate — must request human re-authorisation
-  │ for each sub-agent action scope
-  ▼
-Sub-Agent A          Sub-Agent B
-(RECOMMEND token)    (FILTER token)
-     │                    │
-     ▼                    ▼
-   Phoenix              Phoenix
-```
-
-No agent in the chain can act beyond its explicitly authorised scope. The human intent propagates downward — but only as far as explicitly declared.
-
-Trust does not flow. It is re-established at each layer.
+*(Current limitation, stated plainly: this audit log is printed to console and held in memory for the life of the process — it is not yet a persistent or externally-anchored store. "Immutable" currently means "not editable by the running process once written," not "written to tamper-proof storage outside the process." A real persistent audit store is a roadmap item, not current state.)*
 
 ---
 
 ## Formal basis
 
-The trust model is formalised in:
-
-*"Evolutionary Dynamics in Intent-Governed Coordination Systems"*
-Jeffrey Williams · April 2026
-
-Available on request: IBA@intentbound.com
+*"Evolutionary Dynamics in Intent-Governed Coordination Systems"* — Jeffrey Williams, April 2026. Available on request: IBA@intentbound.com. This document itself has not been independently reviewed as part of the verification pass covering the rest of this material.
 
 ---
 
 ## Zero Trust for AI agents
 
-The Zero Trust security model established one principle that changed enterprise security:
+The Zero Trust security model established one principle that changed enterprise security: **never trust, always verify.**
 
-**Never trust, always verify.**
-
-IBA applies that principle to autonomous AI systems — at the execution layer, not the network layer.
-
-Every agent. Every action. Every time.
+IBA applies that principle to autonomous AI systems at the execution layer, not the network layer — and, as of this pass, that application is actually demonstrated end-to-end, not just described.
 
 ---
 
 *Jeffrey Williams · Inventor of IBA*
 *Patent GB2603013.0 (Pending) · PCT 150+ Countries*
-*IBA@intentbound.com · IntentBound.com · GoverningLayer.com*
+*IBA@intentbound.com · IntentBound.com*
