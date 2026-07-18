@@ -73,26 +73,42 @@ def generate_token(signer: str, scope: str, ttl: int = TOKEN_TTL) -> dict:
     return {"token": encoded, "signature_preview": cert.signature[:16] + "..."}
 
 
-def verify_token(encoded: str) -> tuple[bool, str, dict]:
+def verify_token(encoded: str, required_scope: str) -> tuple[bool, str, dict, int]:
+    """
+    Returns (valid, reason, claims, http_status).
+    Status convention: 401 = authentication failed (bad/missing/expired/forged
+    credentials — we don't know who this is, or don't trust them).
+    403 = authentication succeeded, but the certificate's declared scope
+    doesn't cover the specific action being requested (we know who this is,
+    they're just not authorised for THIS).
+    """
     try:
         token_dict = json.loads(encoded)
         cert = IntentCertificateV2(**token_dict)
     except Exception as e:
-        return False, f"Invalid token format: {e}", {}
+        return False, f"Invalid token format: {e}", {}, 401
 
     if cert.public_key_pem.strip() != TRUSTED_KEYS.public_key_pem().strip():
-        return False, "Untrusted signer: public key does not match pinned trusted principal", {}
+        return False, "Untrusted signer: public key does not match pinned trusted principal", {}, 401
 
     if not cert.verify():
-        return False, "Signature invalid — token tampered or forged", {}
+        return False, "Signature invalid — token tampered or forged", {}, 401
 
     if (time.time() - cert.issued_at) >= cert.hard_expiry_seconds:
-        return False, f"Token expired", {}
+        return False, "Token expired — re-authorise to continue", {}, 401
 
     if cert.declared_intent not in VALID_SCOPES:
-        return False, f"Unknown scope: {cert.declared_intent}", {}
+        return False, f"Unknown scope: {cert.declared_intent}", {}, 401
 
-    return True, "OK", token_dict
+    # Authentication is fully valid at this point. Now check AUTHORIZATION:
+    # does this specific certificate's scope cover the specific action requested?
+    if cert.declared_intent != required_scope:
+        return (False,
+                f"Scope violation: {required_scope} requires an intent token scoped to "
+                f"{required_scope}, this token is scoped to {cert.declared_intent}",
+                token_dict, 403)
+
+    return True, "OK", token_dict, 200
 
 
 def audit(event: str, intent_id: str, signer: str = "-", scope: str = "-", note: str = ""):
@@ -117,8 +133,15 @@ class IBAGateway(BaseHTTPRequestHandler):
 
     def do_POST(self):
         path = urlparse(self.path).path
-        if path == "/recommend":
-            self._handle_recommend()
+        route_map = {
+            "/recommend": ("RECOMMEND", self._call_phoenix_recommend),
+            "/rerank": ("RERANK", self._call_grox_rerank),
+            "/filter": ("FILTER", self._call_phoenix_filter),
+            "/explain": ("EXPLAIN", self._call_phoenix_explain),
+        }
+        if path in route_map:
+            required_scope, action_fn = route_map[path]
+            self._handle_governed_action(required_scope, action_fn)
         elif path == "/token":
             self._handle_token_gen()
         else:
@@ -131,10 +154,8 @@ class IBAGateway(BaseHTTPRequestHandler):
             self.send_json(404, {"error": "Not found"})
 
     def _read_body(self) -> dict:
-        """FIX: previously called json.loads(self.raw_requestline) when
-        Content-Length was 0, which always crashed — raw_requestline is the
-        HTTP request line ('POST /recommend HTTP/1.1'), never JSON. An empty
-        or missing body now correctly returns {} instead of raising."""
+        """FIX (carried from previous pass): empty/missing body returns {}
+        instead of crashing on json.loads(self.raw_requestline)."""
         length = int(self.headers.get("Content-Length", 0))
         if length == 0:
             return {}
@@ -143,49 +164,71 @@ class IBAGateway(BaseHTTPRequestHandler):
         except json.JSONDecodeError:
             return {}
 
-    def _handle_recommend(self):
+    def _handle_governed_action(self, required_scope: str, action_fn):
+        """Single gate shared by all four scoped endpoints. This is the real
+        fix for the gap found in SCOPE.md: a token is now checked against the
+        SPECIFIC action being requested, not just against 'is this any valid
+        scope string'. A RERANK token calling /recommend is rejected here."""
         token_header = self.headers.get("X-IBA-Intent", "")
 
         if not token_header:
-            audit("BLOCKED", "none", note="No X-IBA-Intent header")
+            audit("BLOCKED", "none", note=f"No X-IBA-Intent header (required scope: {required_scope})")
             self.send_json(401, {
                 "error": "IBA intent token required",
                 "hint": "Set header X-IBA-Intent: <token> — generate one at POST /token"
             })
             return
 
-        valid, reason, claims = verify_token(token_header)
+        valid, reason, claims, status = verify_token(token_header, required_scope)
 
         if not valid:
             audit("BLOCKED", claims.get("agent_id", "?"), note=reason)
-            self.send_json(403, {"error": f"Intent verification failed: {reason}"})
+            self.send_json(status, {"error": reason})
             return
 
         body = self._read_body()
         audit("VERIFIED", claims["agent_id"], claims["principal"], claims["declared_intent"])
 
-        result = self._call_phoenix(body, claims)
+        result = action_fn(body, claims)
 
         audit("DELIVERED", claims["agent_id"], claims["principal"], claims["declared_intent"],
-              note=f"returned {len(result.get('recommendations', []))} items")
+              note=f"{required_scope} — {result.get('summary', '')}")
 
         self.send_json(200, {
             "intent_id": claims["agent_id"],
             "signer": claims["principal"],
             "scope": claims["declared_intent"],
-            "recommendations": result["recommendations"],
+            **result,
             "iba_audit_ref": f"txn_{claims['agent_id'][:8]}",
         })
 
-    def _call_phoenix(self, body: dict, claims: dict) -> dict:
-        """Stub — same as the original file. Wiring this to a real Phoenix
-        call is a separate integration task, not claimed as done here."""
+    def _call_phoenix_recommend(self, body: dict, claims: dict) -> dict:
+        """Stub — real Phoenix integration is a separate task, not claimed as done here."""
         candidates = body.get("candidate_ids", list(range(48)))
-        return {
-            "recommendations": candidates[:10],
-            "pipeline": "phoenix+grox",
-            "note": "stub — connect to real Phoenix for live results",
-        }
+        return {"recommendations": candidates[:10], "summary": f"{len(candidates[:10])} items",
+                "note": "stub — connect to real Phoenix for live results"}
+
+    def _call_grox_rerank(self, body: dict, claims: dict) -> dict:
+        """Stub reranker — reverses order so the effect is visibly different
+        from the input, making it obvious this actually ran rather than
+        passing through untouched."""
+        candidates = body.get("candidate_ids", [])
+        reranked = list(reversed(candidates))
+        return {"reranked": reranked, "summary": f"{len(reranked)} items reordered",
+                "note": "stub reranker — connect to real Grox for live results"}
+
+    def _call_phoenix_filter(self, body: dict, claims: dict) -> dict:
+        candidates = body.get("candidate_ids", [])
+        exclude = set(body.get("exclude", []))
+        filtered = [c for c in candidates if c not in exclude]
+        return {"filtered": filtered, "summary": f"{len(candidates) - len(filtered)} removed",
+                "note": "stub filter — predicate is a simple exclude-list for this demo"}
+
+    def _call_phoenix_explain(self, body: dict, claims: dict) -> dict:
+        candidates = body.get("candidate_ids", [])
+        explanation = [{"id": c, "reason": "stub scoring rationale — not real model output"} for c in candidates[:5]]
+        return {"explanations": explanation, "summary": f"{len(explanation)} explained",
+                "note": "stub explain — connect to real Phoenix scoring for live rationale"}
 
     def _handle_token_gen(self):
         body = self._read_body()
